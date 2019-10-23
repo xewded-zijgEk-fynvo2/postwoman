@@ -97,11 +97,11 @@
         <div v-if="!rawInput">
           <ul>
             <li>
-              <label for="reqParamList">Parameter List</label>
-              <textarea id="reqParamList" readonly v-textarea-auto-height="rawRequestBody" v-model="rawRequestBody" placeholder="(add at least one parameter)" rows="1"></textarea>
+              <label for="reqParamList">Payload Parameters</label>
+              <textarea id="reqParamList" readonly v-textarea-auto-height="rawPayloadBody" v-model="rawPayloadBody" placeholder="(add at least one parameter)" rows="1"></textarea>
             </li>
           </ul>
-          <ul v-for="(param, index) in bodyParams" :key="index">
+          <ul v-for="(param, index) in payloadBodyParams" :key="index">
             <li>
               <input :placeholder="'key '+(index+1)" :name="'bparam'+index" v-model="param.key" @keyup.prevent="setRouteQueryState" autofocus>
             </li>
@@ -110,7 +110,7 @@
             </li>
             <div>
               <li>
-                <button class="icon" @click="removeRequestBodyParam(index)" id="delParam">
+                <button class="icon" @click="removePayloadBodyParam(index)" id="delParam">
                   <i class="material-icons">delete</i>
                 </button>
               </li>
@@ -118,7 +118,7 @@
           </ul>
           <ul>
             <li>
-              <button class="icon" @click="addRequestBodyParam" name="addrequest">
+              <button class="icon" @click="addPayloadBodyParam" name="addrequest">
                 <i class="material-icons">add</i>
                 <span>Add New</span>
               </button>
@@ -310,7 +310,7 @@
           <ul>
             <li>
               <div class="flex-wrap">
-                <label for="paramList">Parameter List</label>
+                <label for="paramList">Query Parameters</label>
                 <div>
                   <button class="icon" @click="clearContent('parameters')">
                     <i class="material-icons">clear_all</i>
@@ -438,7 +438,7 @@
         bearerToken: '',
         headers: [],
         params: [],
-        bodyParams: [],
+        payloadBodyParams: [],
         rawParams: '',
         rawInput: false,
         contentType: 'application/json',
@@ -550,13 +550,13 @@
       pathName() {
         return this.path.match(/^([^?]*)\??/)[1]
       },
-      rawRequestBody() {
+      rawPayloadBody() {
         const {
-          bodyParams
+          payloadBodyParams
         } = this
         if (this.contentType === 'application/json') {
           try {
-            const obj = JSON.parse(`{${bodyParams.filter(({key}) => !!key).map(({key, value}) => `
+            const obj = JSON.parse(`{${payloadBodyParams.filter(({key}) => !!key).map(({key, value}) => `
               "${key}": "${value}"
               `).join()}}`)
             return JSON.stringify(obj)
@@ -564,7 +564,7 @@
             return 'invalid'
           }
         } else {
-          return bodyParams
+          return payloadBodyParams
             .filter(({
               key
             }) => !!key)
@@ -616,7 +616,7 @@
             })
           }
           if (['POST', 'PUT', 'PATCH'].includes(this.method)) {
-            const requestBody = this.rawInput ? this.rawParams : this.rawRequestBody;
+            const requestBody = this.rawInput ? this.rawParams : this.rawPayloadBody;
             requestString.push("xhr.setRequestHeader('Content-Length', " + requestBody.length + ")")
             requestString.push("xhr.setRequestHeader('Content-Type', `" + this.contentType + "; charset=utf-8`)")
             requestString.push("xhr.send(" + requestBody + ")")
@@ -636,7 +636,7 @@
             headers.push('    "Authorization": "Bearer Token ' + this.bearerToken + ',\n')
           }
           if (['POST', 'PUT', 'PATCH'].includes(this.method)) {
-            const requestBody = this.rawInput ? this.rawParams : this.rawRequestBody;
+            const requestBody = this.rawInput ? this.rawParams : this.rawPayloadBody;
             requestString.push('  body: ' + requestBody + ',\n')
             headers.push('    "Content-Length": ' + requestBody.length + ',\n')
             headers.push('    "Content-Type": "' + this.contentType + '; charset=utf-8",\n')
@@ -676,7 +676,7 @@
             })
           }
           if (['POST', 'PUT', 'PATCH'].includes(this.method)) {
-            const requestBody = this.rawInput ? this.rawParams : this.rawRequestBody;
+            const requestBody = this.rawInput ? this.rawParams : this.rawPayloadBody;
             requestString.push("  -H 'Content-Length: " + requestBody.length + "' \\\n")
             requestString.push("  -H 'Content-Type: " + this.contentType + "; charset=utf-8' \\\n")
             requestString.push("  -d '" + requestBody + "' \\\n")
@@ -739,7 +739,7 @@
         // Content-Type are sent.
         let requestBody;
         if (this.hasRequestBody) {
-          requestBody = this.rawInput ? this.rawParams : this.rawRequestBody;
+          requestBody = this.rawInput ? this.rawParams : this.rawPayloadBody;
 
           Object.assign(headers, {
             //'Content-Length': requestBody.length,
@@ -872,15 +872,15 @@
           icon: 'delete'
         });
       },
-      addRequestBodyParam() {
-        this.bodyParams.push({
+      addPayloadBodyParam() {
+        this.payloadBodyParams.push({
           key: '',
           value: ''
         })
         return false
       },
-      removeRequestBodyParam(index) {
-        this.bodyParams.splice(index, 1)
+      removePayloadBodyParam(index) {
+        this.payloadBodyParams.splice(index, 1)
         this.$toast.error('Deleted', {
           icon: 'delete'
         });
@@ -990,14 +990,14 @@
         let flats = ['method', 'url', 'path', 'auth', 'httpUser', 'httpPassword', 'bearerToken', 'contentType'].map(
           item => flat(item))
         let deeps = ['headers', 'params'].map(item => deep(item))
-        let bodyParams = this.rawInput ? [flat('rawParams')] : [deep('bodyParams')];
+        let payloadBodyParams = this.rawInput ? [flat('rawParams')] : [deep('payloadBodyParams')];
 
-        this.$router.replace('/?' + flats.concat(deeps, bodyParams).join('').slice(0, -1))
+        this.$router.replace('/?' + flats.concat(deeps, payloadBodyParams).join('').slice(0, -1))
       },
       setRouteQueries(queries) {
         if (typeof (queries) !== 'object') throw new Error('Route query parameters must be a Object')
         for (const key in queries) {
-          if (['headers', 'params', 'bodyParams'].includes(key)) this[key] = JSON.parse(queries[key])
+          if (['headers', 'params', 'payloadBodyParams'].includes(key)) this[key] = JSON.parse(queries[key])
           if (key === 'rawParams') {
             this.rawInput = true
             this.rawParams = queries['rawParams']
@@ -1075,7 +1075,7 @@
             this.httpPassword = '';
             this.headers = [];
             this.params = [];
-            this.bodyParams = [];
+            this.payloadBodyParams = [];
             this.rawParams = '';
         }
         this.$toast.info('Cleared', {
@@ -1099,7 +1099,7 @@
         vm.bearerToken,
         vm.headers,
         vm.params,
-        vm.bodyParams,
+        vm.payloadBodyParams,
         vm.contentType,
         vm.rawParams
       ], val => {
