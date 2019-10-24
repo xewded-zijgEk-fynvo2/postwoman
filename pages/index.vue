@@ -1,5 +1,10 @@
 <template>
   <div class="page">
+    <save-request
+      v-bind:show="showRequestModal"
+      v-on:hide-model='hideRequestModal'
+      v-bind:editing-request='editRequest'
+    ></save-request>
     <pw-modal v-if="showModal" @close="showModal = false">
       <div slot="header">
         <ul>
@@ -33,7 +38,7 @@
         </ul>
       </div>
     </pw-modal>
-    <pw-section class="blue" label="Request" ref="request">
+    <pw-section class="blue" icon="cloud_upload" label="Request" ref="request">
       <ul>
         <li>
           <label for="method">Method</label>
@@ -56,24 +61,13 @@
           <input @keyup.enter="isValidURL ? sendRequest() : null" id="path" name="path" v-model="path" @input="pathInputHandler">
         </li>
         <li>
-          <label class="hide-on-small-screen" for="copyRequest">&nbsp;</label>
-          <button class="icon" @click="copyRequest" id="copyRequest" ref="copyRequest" :disabled="!isValidURL">
-            <i class="material-icons">share</i>
-            <span>Permalink</span>
-          </button>
-        </li>
-        <li>
-          <label class="hide-on-small-screen" for="code">&nbsp;</label>
-          <button class="icon" id="code" v-on:click="isHidden = !isHidden" :disabled="!isValidURL">
-            <i class="material-icons" v-if="isHidden">visibility</i>
-            <i class="material-icons" v-if="!isHidden">visibility_off</i>
-            <span>{{ isHidden ? 'Show Code' : 'Hide Code' }}</span>
-          </button>
+          <label for="label">Label</label>
+          <input id="label" name="label" type="text" v-model="label" placeholder="(optional)">
         </li>
         <li>
           <label class="hide-on-small-screen" for="send">&nbsp;</label>
-          <button :disabled="!isValidURL" @click="sendRequest" class="show" id="send" ref="sendButton">
-            Send <span id="hidden-message">Again</span>
+          <button :disabled="!isValidURL" @click="sendRequest" id="send" ref="sendButton">
+            Send<span id="hidden-message"> Again</span>
             <span><i class="material-icons">send</i></span>
           </button>
         </li>
@@ -88,7 +82,7 @@
         <ul>
           <li>
             <span>
-              <pw-toggle :on="rawInput" @change="rawInput = !rawInput">
+              <pw-toggle :on="rawInput" @change="rawInput = $event">
                 Raw Input {{ rawInput ? "Enabled" : "Disabled" }}
               </pw-toggle>
             </span>
@@ -134,23 +128,30 @@
           </ul>
         </div>
       </div>
-      <ul>
-        <li>
-          <input id="label" name="label" type="text" v-model="label" placeholder="Label request">
-        </li>
-      </ul>
       <div class="flex-wrap">
-        <button class="icon" id="show-modal" @click="showModal = true">
-          <i class="material-icons">import_export</i>
-          <span>Import cURL</span>
-        </button>
-        <button class="icon" @click="clearContent">
-          <i class="material-icons">clear_all</i>
-          <span>Clear all</span>
-        </button>
+        <div style="text-align: center;">
+          <button class="icon" id="show-modal" @click="showModal = true" v-tooltip.bottom='"Import cURL"'>
+            <i class="material-icons">import_export</i>
+          </button>
+          <button class="icon" id="code" v-on:click="isHidden = !isHidden" :disabled="!isValidURL" v-tooltip.bottom='{ content: isHidden ? "Show Code" : "Hide Code"}'>
+            <i class="material-icons" v-if="isHidden">visibility</i>
+            <i class="material-icons" v-if="!isHidden">visibility_off</i>
+          </button>
+        </div>
+        <div style="text-align: center;">
+          <button class="icon" @click="copyRequest" id="copyRequest" ref="copyRequest" :disabled="!isValidURL" v-tooltip.bottom='"Sharable request URL"'>
+            <i class="material-icons">share</i>
+          </button>
+          <button class="icon" @click="saveRequest" id="saveRequest" ref="saveRequest" :disabled="!isValidURL" v-tooltip.bottom='"Save to Collections"'>
+            <i class="material-icons">save</i>
+          </button>
+          <button class="icon" @click="clearContent" v-tooltip.bottom='"Clear all"'>
+            <i class="material-icons">clear_all</i>
+          </button>
+        </div>
       </div>
     </pw-section>
-    <pw-section class="yellow" label="Code" ref="requestCode" v-if="!isHidden">
+    <pw-section class="yellow" icon="code" label="Code" ref="requestCode" v-if="!isHidden">
       <ul>
         <li>
           <label for="requestType">Request Type</label>
@@ -176,7 +177,7 @@
         </li>
       </ul>
     </pw-section>
-    <pw-section class="purple" id="response" label="Response" ref="response">
+    <pw-section class="purple" icon="cloud_download" id="response" label="Response" ref="response">
       <ul>
         <li>
           <label for="status">status</label>
@@ -218,7 +219,7 @@
       <input id="tab-one" type="radio" name="grp" checked="checked">
       <label for="tab-one">Authentication</label>
       <div class="tab">
-        <pw-section class="cyan" label="Authentication">
+        <pw-section class="cyan" icon="vpn_key" label="Authentication">
           <ul>
             <li>
               <div class="flex-wrap">
@@ -263,7 +264,7 @@
       <input id="tab-two" type="radio" name="grp">
       <label for="tab-two">Headers</label>
       <div class="tab">
-        <pw-section class="orange" label="Headers">
+        <pw-section class="orange" icon="toc" label="Headers">
           <ul>
             <li>
               <div class="flex-wrap">
@@ -306,7 +307,7 @@
       <input id="tab-three" type="radio" name="grp">
       <label for="tab-three">Parameters</label>
       <div class="tab">
-        <pw-section class="pink" label="Parameters">
+        <pw-section class="pink" icon="input" label="Parameters">
           <ul>
             <li>
               <div class="flex-wrap">
@@ -348,6 +349,9 @@
       </div>
     </section>
     <history @useHistory="handleUseHistory" ref="historyComponent"></history>
+    <pw-section class="yellow" icon="folder_special" label="Collections" ref="Collections">
+      <collections></collections>
+    </pw-section>
   </div>
 </template>
 <script>
@@ -359,6 +363,8 @@
   import textareaAutoHeight from "../directives/textareaAutoHeight";
   import toggle from "../components/toggle";
   import modal from "../components/modal";
+  import collections from '../components/collections';
+  import saveRequest from '../components/collections/saveRequest';
   import parseCurlCommand from '../assets/js/curlparser.js';
   import hljs from 'highlight.js';
   import 'highlight.js/styles/dracula.css';
@@ -421,6 +427,8 @@
       'pw-modal': modal,
       history,
       autocomplete,
+      collections,
+      saveRequest,
     },
     data() {
       return {
@@ -471,7 +479,9 @@
           'application/x-www-form-urlencoded',
           'text/html',
           'text/plain'
-        ]
+        ],
+        showRequestModal: false,
+        editRequest: {},
       }
     },
     watch: {
@@ -491,9 +501,9 @@
             responseText.removeAttribute("class");
             responseText.innerHTML = null;
             responseText.innerText = this.response.body;
-          } else if (responseText && this.response.body != "(waiting to send request)" && this.response.body !=
-            "Loading..." && this.response.body != "See JavaScript console (F12) for details.") {
-            responseText.innerText = this.responseType == 'application/json' || 'application/hal+json' ? JSON.stringify(this.response.body,
+          } else if (responseText && this.response.body !== "(waiting to send request)" && this.response.body !==
+            "Loading..." && this.response.body !== "See JavaScript console (F12) for details.") {
+            responseText.innerText = this.responseType === 'application/json' || this.responseType === 'application/hal+json' ? JSON.stringify(this.response.body,
               null, 2) : this.response.body;
             hljs.highlightBlock(document.querySelector("div#response-details-wrapper pre code"));
           } else {
@@ -526,9 +536,38 @@
           this.path = path;
         },
         deep: true
+      },
+      selectedRequest (newValue, oldValue) {
+        // @TODO: Convert all variables to single request variable
+        if (!newValue) return;
+        this.url = newValue.url;
+        this.path = newValue.path;
+        this.method = newValue.method;
+        this.auth = newValue.auth;
+        this.httpUser = newValue.httpUser;
+        this.httpPassword = newValue.httpPassword;
+        this.passwordFieldType = newValue.passwordFieldType;
+        this.bearerToken = newValue.bearerToken;
+        this.headers = newValue.headers;
+        this.params = newValue.params;
+        this.bodyParams = newValue.bodyParams;
+        this.rawParams = newValue.rawParams;
+        this.rawInput = newValue.rawInput;
+        this.contentType = newValue.contentType;
+        this.requestType = newValue.requestType;
+      },
+      editingRequest (newValue) {
+        this.editRequest = newValue;
+        this.showRequestModal = true;
       }
     },
     computed: {
+      selectedRequest() {
+        return this.$store.state.postwoman.selectedRequest;
+      },
+      editingRequest() {
+        return this.$store.state.postwoman.editingRequest;
+      },
       requestName() {
         return this.label
       },
@@ -600,7 +639,7 @@
         return (this.response.headers['content-type'] || '').split(';')[0].toLowerCase();
       },
       requestCode() {
-        if (this.requestType == 'JavaScript XHR') {
+        if (this.requestType === 'JavaScript XHR') {
           var requestString = []
           requestString.push('const xhr = new XMLHttpRequest()');
           const user = this.auth === 'Basic' ? this.httpUser : null
@@ -659,7 +698,7 @@
           requestString.push('  error.message\n')
           requestString.push(')}')
           return requestString.join('');
-        } else if (this.requestType == 'cURL') {
+        } else if (this.requestType === 'cURL') {
           var requestString = [];
           requestString.push('curl -X ' + this.method + ' \\\n')
           requestString.push("  '" + this.url + this.path + this.queryString + "' \\\n")
@@ -700,7 +739,27 @@
           behavior: 'smooth'
         });
       },
+      async makeRequest(auth, headers, requestBody) {
+        const requestOptions = {
+            method: this.method,
+            url: this.url + this.pathName + this.queryString,
+            auth,
+            headers,
+            data: requestBody ? requestBody.toString() : null
+        };
+
+        const config = this.$store.state.postwoman.settings.PROXY_ENABLED ? {
+            method: 'POST',
+            url: `${window.location.protocol}//${window.location.host}/proxy`,
+            data: requestOptions
+          } : requestOptions;
+
+        const response = await this.$axios(config);
+        return this.$store.state.postwoman.settings.PROXY_ENABLED ? response.data : response;
+      },
       async sendRequest() {
+        this.$toast.clear();
+
         if (!this.isValidURL) {
           this.$toast.error('URL is not formatted properly', {
             icon: 'error'
@@ -768,13 +827,8 @@
 
         try {
           const startTime = Date.now();
-          const payload = await this.$axios({
-            method: this.method,
-            url: this.url + this.pathName + this.queryString,
-            auth,
-            headers,
-            data: requestBody ? requestBody.toString() : null
-          });
+
+          const payload = await this.makeRequest(auth, headers, requestBody);
 
           const duration = Date.now() - startTime;
           this.$toast.info(`Finished in ${duration}ms`, {
@@ -804,6 +858,7 @@
             this.$refs.historyComponent.addEntry(entry);
           })();
         } catch (error) {
+          console.error(error);
           if (error.response) {
             this.response.headers = error.response.headers;
             this.response.status = error.response.status;
@@ -821,13 +876,25 @@
             };
             this.$refs.historyComponent.addEntry(entry);
             return;
+          } else {
+            this.response.status = error.message;
+            this.response.body = "See JavaScript console (F12) for details.";
+            this.$toast.error(error + ' (F12 for details)', {
+              icon: 'error'
+            });
+            if(!this.$store.state.postwoman.settings.PROXY_ENABLED) {
+              this.$toast.info('Try enabling Proxy', {
+                icon: 'help',
+                duration: 5000,
+                action: {
+                  text: 'Settings',
+                  onClick: (e, toastObject) => {
+                    this.$router.push({ path: '/settings' });
+                  }
+                }
+              });
+            }
           }
-
-          this.response.status = error.message;
-          this.response.body = "See JavaScript console (F12) for details.";
-          this.$toast.error('Something went wrong!', {
-            icon: 'error'
-          });
         }
       },
       getQueryStringFromPath() {
@@ -919,17 +986,17 @@
             }).then(() => {})
             .catch(console.error);
         } else {
-          this.$refs.copyRequest.innerHTML = this.copiedButton + '<span>Copied</span>';
-          this.$toast.success('Copied to clipboard', {
-            icon: 'done'
-          });
           var dummy = document.createElement('input');
           document.body.appendChild(dummy);
           dummy.value = window.location.href;
           dummy.select();
           document.execCommand('copy');
           document.body.removeChild(dummy);
-          setTimeout(() => this.$refs.copyRequest.innerHTML = this.copyButton + '<span>Permalink</span>', 1000)
+          this.$refs.copyRequest.innerHTML = this.copiedButton;
+          this.$toast.success('Copied to clipboard', {
+            icon: 'done'
+          });
+          setTimeout(() => this.$refs.copyRequest.innerHTML = '<i class="material-icons">share</i>', 1000)
         }
       },
       copyRequestCode() {
@@ -1009,7 +1076,10 @@
         const sendButtonElement = this.$refs.sendButton;
         const observer = new IntersectionObserver((entries, observer) => {
           entries.forEach(entry => {
-            sendButtonElement.classList.toggle('show');
+            if(entry.isIntersecting) sendButtonElement.classList.remove('show');
+            // The button should float when it is no longer visible on screen.
+            // This is done by adding the show class to the button.
+            else sendButtonElement.classList.add('show');
           });
         }, {
           rootMargin: '0px',
@@ -1081,7 +1151,36 @@
         this.$toast.info('Cleared', {
           icon: 'clear_all'
         });
-      }
+      },
+      saveRequest() {
+        this.editRequest = {
+          url: this.url,
+          path: this.path,
+          method: this.method,
+          auth: this.auth,
+          httpUser: this.httpUser,
+          httpPassword: this.httpPassword,
+          passwordFieldType: this.passwordFieldType,
+          bearerToken: this.bearerToken,
+          headers: this.headers,
+          params: this.params,
+          bodyParams: this.bodyParams,
+          rawParams: this.rawParams,
+          rawInput: this.rawInput,
+          contentType: this.contentType,
+          requestType: this.requestType,
+        };
+
+        if (this.selectedRequest.url) {
+          this.editRequest = Object.assign({}, this.selectedRequest, this.editRequest);
+        }
+
+        this.showRequestModal = true;
+      },
+      hideRequestModal() {
+        this.showRequestModal = false;
+        this.editRequest = {};
+      },
     },
     mounted() {
       this.observeRequestButton();
