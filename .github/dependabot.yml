@@ -1,0 +1,33 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
+  reviewers:
+  - liyasthomas
+  labels:
+  - Dependency upgrade
+  ignore:
+  - dependency-name: cypress
+    versions:
+    - 6.3.0
+    - 6.4.0
+    - 6.5.0
+    - 6.6.0
+    - 6.8.0
+    - 7.0.1
+  - dependency-name: nuxt
+    versions:
+    - 2.14.12
+    - 2.15.1
+    - 2.15.2
+    - 2.15.3
+  - dependency-name: start-server-and-test
+    versions:
+    - 1.11.7
+    - 1.12.0
+  - dependency-name: elliptic
+    versions:
+    - 6.5.3
